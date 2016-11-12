@@ -39,4 +39,4 @@ def scenario_parser(filename):
 	return Board(grid_input,pieces)
 
 board = scenario_parser("base.scenario")
-print board
+print board.attempt_solve()
