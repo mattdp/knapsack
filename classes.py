@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+from copy import deepcopy
+from IPython import embed
+
 #INPUT 
 #grid_list:  list of zeros and hypens
 #piece_list: for default orientation, grid squares filled by a piece
@@ -11,10 +14,10 @@
 #xy_next: [x,y] where placing first piece not in use
 #orient_next: int[0-3] with 0 up, 1 right, etc to orient piece
 #placing_piece: location in array of piece being placed at this call level
-class Board:
-	def __init__(self,grid_list = [], piece_list = [], *args):
-		self.xy_next = [0,0]
-		self.placing_piece = 0
+class Board(object):
+	def __init__(self,grid_list = [], piece_list = [], xy_next = [0,0], placing_piece = 0, *args):
+		self.xy_next = xy_next
+		self.placing_piece = placing_piece
 		self.grid = [list(line) for line in grid_list]
 
 		if len(piece_list) > 100:
@@ -36,11 +39,33 @@ class Board:
 	def valid_bounds(self):
 		return [len(self.grid[0]),len(self.grid)]
 
-	def in_bounds_test(self):
-		return (self.xy_next[0] < self.valid_bounds()[0] and self.xy_next[1] < self.valid_bounds()[1])
+	def in_bounds_test(self,location = [], *args):
+		vb = self.valid_bounds()
+		return (location[0] < vb[0] and location[1] < vb[1])
 
-	#ADD ONCE MINI LOOP TESTED
+	# can error if coordinates invalid
+	def empty_grid_test(self,location = [], *args):
+		return ("0" == self.grid[location[0]][location[1]])
+
+
+# IN OLD BOARD
+# In [1]: type(self.pieces[self.placing_piece].blueprint)
+# Out[1]: list
+
+# INSIDE THE NEW CREATED BOARD
+# In [9]: type(self.pieces[0].blueprint)
+# Out[9]: <probably a piece now>
+
+	#not DRY (place_piece), refactor when add orientation
 	def valid_placement_test(self):
+		abs_location = [0,0]
+		for rel_location in self.pieces[self.placing_piece].blueprint:
+			for i in [0,1]:
+				abs_location[i] = rel_location[i] + self.xy_next[i]
+			if (self.in_bounds_test(abs_location) and self.empty_grid_test(abs_location)):
+				next
+			else: 
+				return False 
 		return True
 
 	#not smart. will overflow bounds
@@ -52,19 +77,34 @@ class Board:
 			self.xy_next[0] = 0
 			self.xy_next[1] += 1
 
+	#not DRY (valid_placement_test), refactor when add orientation
+	def place_piece(self, piece = None, xy_next = [0,0]):
+		abs_location = [0,0]
+		for rel_location in piece.blueprint:
+			for i in [0,1]:
+				abs_location[i] = rel_location[i] + self.xy_next[i]
+			self.grid[abs_location[0]][abs_location[1]] = piece.char
+		return True
+
 	#returns either a board or False. Recursive.
 	def attempt_solve(self):
-		if (self.placing_piece > len(self.pieces)):
+		if (self.placing_piece >= len(self.pieces)):
 			return self
-		#while still possibilities left to try for placing_piece
-		while (self.in_bounds_test()):
-			#self.pieces[placing_piece].set_location(self.xy_next)
-			#try to insert placing_piece at xy_next
-				#if that's a legal placement
-					#call self with the new placement (think about what to update)
-					#if that solved it it'll get stopped at top, so it's false
-					#so update what piece to try next
-			print self.xy_next
+
+		piece = self.pieces[self.placing_piece]
+
+		while (self.in_bounds_test(self.xy_next)):
+			if self.valid_placement_test():
+
+				#RIGHT NOW PIECES CAN GO ON TOP OF EACH OTHER
+				#NEED TO UPDATE GRID IN PLACE_PIECE
+				
+				#note that pieces not copied, since not changed
+				b = Board(deepcopy(self.grid), self.pieces, [0,0], self.placing_piece + 1 )
+				b.place_piece(piece,self.xy_next)
+				print b
+				b.attempt_solve() #will be caught at top of next call at this level if a win
+
 			self.advance_next_placement()
 		#out of possibilities
 		return False	
@@ -73,14 +113,10 @@ class Board:
 #blueprint - list of coordinates on how to build the piece
 #location - where placed on the board
 #chat - what char used as an id/visual representation
-class Piece:
+class Piece(object):
 	def __init__(self,blueprint_list = [], char_num = 65, *args):
 		self.blueprint = blueprint_list
-		self.location = False
 		self.char = chr(char_num)
 
 	def __repr__(self):
 		return "Char: " + self.char + ", Blueprint: " + str(self.blueprint) + "\n"
-
-	def set_location(self,xy_next = [], *args):
-		self.location = xy_next

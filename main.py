@@ -2,6 +2,8 @@
 
 from classes import Board
 from copy import deepcopy
+from IPython import embed
+import ast
 
 def scenario_parser(filename):
 	file = open(filename)
@@ -22,7 +24,7 @@ def scenario_parser(filename):
 	one_piece = []
 	while (i < len(lines)):
 		if lines[i]:
-			one_piece.append(lines[i])
+			one_piece.append(ast.literal_eval(lines[i]))
 		else:
 			pieces.append(deepcopy(one_piece))
 			one_piece = []
